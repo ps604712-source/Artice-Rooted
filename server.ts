@@ -25,7 +25,8 @@ async function startServer() {
 
   // Leaked Request Recovery Middleware
   app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path.startsWith('/@vite') || req.path.startsWith('/src')) {
+    // Only skip internal API and Vite-specific paths
+    if (req.path.startsWith('/api/proxy/') || req.path.startsWith('/@vite/client') || req.path.startsWith('/@react-refresh')) {
       return next();
     }
 
@@ -168,9 +169,10 @@ async function startServer() {
         const $ = cheerio.load(html);
         const currentUrl = new URL(response.config.url || targetUrl);
 
-        // Strip security meta tags and SRI
+        // Strip security meta tags, SRI, and existing base tags
         $('meta[http-equiv="content-security-policy"]').remove();
         $('meta[http-equiv="x-frame-options"]').remove();
+        $('base').remove();
         $('[integrity]').removeAttr('integrity');
         $('[crossorigin]').removeAttr('crossorigin');
 
@@ -192,6 +194,37 @@ async function startServer() {
           };
 
           // Environment Spoofing
+          const originalLocation = window.location;
+          const locationProxy = new Proxy({}, {
+            get: (target, prop) => {
+              if (prop === 'href') return TARGET_URL;
+              if (prop === 'origin') return TARGET_ORIGIN;
+              if (prop === 'host') return new URL(TARGET_ORIGIN).host;
+              if (prop === 'hostname') return new URL(TARGET_ORIGIN).hostname;
+              if (prop === 'pathname') return new URL(TARGET_URL).pathname;
+              if (prop === 'search') return new URL(TARGET_URL).search;
+              if (prop === 'hash') return new URL(TARGET_URL).hash;
+              if (prop === 'assign' || prop === 'replace' || prop === 'reload') {
+                return (...args) => {
+                  if (prop === 'reload') return originalLocation.reload();
+                  const newUrl = proxyUrl(args[0]);
+                  return originalLocation[prop](newUrl);
+                };
+              }
+              const val = originalLocation[prop];
+              return typeof val === 'function' ? val.bind(originalLocation) : val;
+            },
+            set: (target, prop, value) => {
+              if (prop === 'href') {
+                originalLocation.href = proxyUrl(value);
+                return true;
+              }
+              return false;
+            }
+          });
+
+          Object.defineProperty(window, 'location', { get: () => locationProxy, configurable: true });
+          Object.defineProperty(document, 'location', { get: () => locationProxy, configurable: true });
           Object.defineProperty(window, 'top', { get: () => window.self });
           Object.defineProperty(window, 'parent', { get: () => window.self });
           Object.defineProperty(document, 'domain', { get: () => new URL(TARGET_ORIGIN).hostname, set: () => {} });
