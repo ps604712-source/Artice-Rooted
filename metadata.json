@@ -1,0 +1,5 @@
+{
+  "name": "Unblocked Games Portal",
+  "description": "A simple portal for playing unblocked games via iframes.",
+  "requestFramePermissions": []
+}

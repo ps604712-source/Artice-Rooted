@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "title": "2048",
+    "thumbnail": "https://picsum.photos/seed/2048/300/200",
+    "url": "https://play2048.co/"
+  },
+  {
+    "id": "2",
+    "title": "Hextris",
+    "thumbnail": "https://picsum.photos/seed/hextris/300/200",
+    "url": "https://hextris.io/"
+  },
+  {
+    "id": "3",
+    "title": "Flappy Bird (Clone)",
+    "thumbnail": "https://picsum.photos/seed/flappy/300/200",
+    "url": "https://flappybird.io/"
+  },
+  {
+    "id": "4",
+    "title": "Snake",
+    "thumbnail": "https://picsum.photos/seed/snake/300/200",
+    "url": "https://www.google.com/logos/2010/pacman10-i.html"
+  },
+  {
+    "id": "5",
+    "title": "Paper.io 2",
+    "thumbnail": "https://picsum.photos/seed/paperio/300/200",
+    "url": "https://paper-io.com/"
+  },
+  {
+    "id": "6",
+    "title": "Slither.io",
+    "thumbnail": "https://picsum.photos/seed/slither/300/200",
+    "url": "https://slither.io/"
+  }
+]
