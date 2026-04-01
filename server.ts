@@ -81,6 +81,7 @@ async function startServer() {
       const protocol = req.protocol;
       const appUrl = process.env.APP_URL || `${protocol}://${host}`;
       const proxyUrlBase = `${appUrl}/api/proxy/`;
+      const targetUrlObj = new URL(targetUrl);
 
       const headers: Record<string, any> = {
         "User-Agent": USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
@@ -363,7 +364,7 @@ async function startServer() {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "custom",
+      appType: "spa",
     });
     app.use(vite.middlewares);
 
