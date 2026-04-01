@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs/promises";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import cookieParser from "cookie-parser";
@@ -78,14 +79,14 @@ async function startServer() {
           "User-Agent": randomUA,
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
           "Accept-Language": "en-US,en;q=0.9",
-          "Referer": "https://www.google.com/",
+          "Referer": targetUrl,
           "Cookie": cookieHeader,
           "Cache-Control": "no-cache",
           "Pragma": "no-cache",
           "Upgrade-Insecure-Requests": "1",
           "Sec-Fetch-Dest": "document",
           "Sec-Fetch-Mode": "navigate",
-          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Site": "none",
           "Sec-Fetch-User": "?1"
         },
         data: req.method !== 'GET' ? req.body : undefined,
@@ -93,6 +94,10 @@ async function startServer() {
         maxRedirects: 0,
         responseType: 'arraybuffer'
       };
+
+      if (req.method !== 'GET') {
+        axiosOptions.headers['Origin'] = new URL(targetUrl).origin;
+      }
 
       let response = await axios(axiosOptions);
 
@@ -133,7 +138,12 @@ async function startServer() {
           "cross-origin-opener-policy",
           "cross-origin-resource-policy",
           "permissions-policy",
-          "referrer-policy"
+          "referrer-policy",
+          "access-control-allow-origin",
+          "access-control-allow-credentials",
+          "access-control-allow-methods",
+          "access-control-allow-headers",
+          "access-control-expose-headers"
         ].includes(lowerKey)) {
           res.setHeader(key, value as string);
         }
@@ -196,14 +206,43 @@ async function startServer() {
         rewriteAttr('link', 'href');
         rewriteAttr('script', 'src');
         rewriteAttr('img', 'src');
+        rewriteAttr('img', 'data-src');
         rewriteAttr('form', 'action');
         rewriteAttr('iframe', 'src');
         rewriteAttr('source', 'src');
         rewriteAttr('embed', 'src');
         rewriteAttr('area', 'href');
+        rewriteAttr('video', 'src');
+        rewriteAttr('audio', 'src');
+
+        const rewriteSrcset = (selector: string) => {
+          $(selector).each((_, el) => {
+            const val = $(el).attr('srcset');
+            if (val) {
+              const parts = val.split(',').map(part => {
+                const trimmed = part.trim();
+                if (!trimmed) return part;
+                const spaceIndex = trimmed.indexOf(' ');
+                const url = spaceIndex === -1 ? trimmed : trimmed.substring(0, spaceIndex);
+                const size = spaceIndex === -1 ? '' : trimmed.substring(spaceIndex);
+                if (url && !url.startsWith('data:') && !url.startsWith('javascript:')) {
+                  try {
+                    const absoluteUrl = new URL(url, currentUrl.href).toString();
+                    return `${proxyUrlBase}${absoluteUrl}${size}`;
+                  } catch (e) {}
+                }
+                return part;
+              });
+              $(el).attr('srcset', parts.join(', '));
+            }
+          });
+        };
+
+        rewriteSrcset('img');
+        rewriteSrcset('source');
 
         // Frame-busting protection
-        let body = $.html();
+        body = $.html();
         body = body.replace(/if\s*\(window\.top\s*!==\s*window\.self\)/g, "if(false)");
         body = body.replace(/if\s*\(top\s*!==\s*self\)/g, "if(false)");
         body = body.replace(/window\.top\.location/g, "window.self.location");
@@ -233,9 +272,21 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
     });
     app.use(vite.middlewares);
+
+    app.get("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        let template = await fs.readFile(path.resolve(__dirname, "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
