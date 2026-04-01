@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Artice Rooted - Unblocked Entertainment
 
-# Run and deploy your AI Studio app
+The premier destination for unblocked entertainment. Built for speed, designed for gamers.
 
-This contains everything you need to run your app locally.
+## Features
+- **Unblocked Proxy:** Browse any site through our secure proxy.
+- **Game Library:** A curated collection of unblocked games.
+- **Request System:** Request new games directly through the app.
+- **Responsive Design:** Works on desktop and mobile.
 
-View your app in AI Studio: https://ai.studio/apps/1e419e3e-7d01-4c50-a28e-42fc4f227d99
+## Deployment Instructions
 
-## Run Locally
+### 1. Requirements
+- Node.js 22.6.0 or higher.
+- A hosting provider that supports Node.js (e.g., Cloud Run, Render, Railway, Heroku).
+- **Note:** This application includes a backend proxy server and will NOT work on static-only hosting like GitHub Pages.
 
-**Prerequisites:**  Node.js
+### 2. Setup
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file based on `.env.example` and set your `APP_URL`.
 
+### 3. Build and Start
+1. Build the frontend:
+   ```bash
+   npm run build
+   ```
+2. Start the server:
+   ```bash
+   npm start
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 4. Deployment to Cloud Run (Recommended)
+If you are using AI Studio, you can deploy directly to Cloud Run using the "Deploy" button. The application is already configured with the correct `start` script.
+
+## Proxy Configuration
+The proxy server handles link rewriting and frame-busting protection. It is accessible at `/api/proxy/{targetUrl}`.

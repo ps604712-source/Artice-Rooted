@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Gamepad2, X, Maximize2, ExternalLink, Clock, Flame, LayoutGrid, Home as HomeIcon, ChevronRight } from 'lucide-react';
+import { Search, Gamepad2, X, Maximize2, ExternalLink, Clock, Flame, LayoutGrid, Home as HomeIcon, ChevronRight, ArrowLeft, ArrowRight, RefreshCw, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import gamesData from './games.json';
 
@@ -295,36 +295,112 @@ export default function App() {
               transition={{ duration: 0.4 }}
               className="h-[calc(100vh-160px)]"
             >
-              <div className={`w-full h-full bg-black overflow-hidden border border-slate-800 shadow-2xl transition-all duration-500 ${isProxyFullscreen ? 'fixed inset-0 z-[100] rounded-0' : 'rounded-3xl'}`}>
-                <div className="bg-slate-900/90 border-b border-slate-800 p-2 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-950 p-1 rounded-lg border border-blue-900/30">
-                      <ExternalLink className="w-3 h-3 text-blue-100" />
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate max-w-[300px]">
-                      {activeProxyUrl || 'DuckDuckGo Search'}
-                    </span>
-                  </div>
+              <div className={`w-full h-full bg-white overflow-hidden border border-slate-800 shadow-2xl transition-all duration-500 flex flex-col ${isProxyFullscreen ? 'fixed inset-0 z-[100] rounded-0' : 'rounded-3xl'}`}>
+                {/* Browser Header */}
+                <div className="bg-slate-900 border-b border-slate-800 p-3 flex items-center gap-4 flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <button 
-                      onClick={() => setActiveProxyUrl('https://duckduckgo.com')}
-                      className="px-2 py-1 hover:bg-slate-800 rounded-lg text-[9px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all border border-slate-800"
+                      onClick={() => {
+                        const iframe = document.querySelector('iframe[title="Proxy Browser"]');
+                        if (iframe) {
+                          try {
+                            iframe.contentWindow.history.back();
+                          } catch (e) {
+                            console.warn("Cannot access iframe history due to cross-origin restrictions");
+                          }
+                        }
+                      }}
+                      className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      title="Back"
                     >
-                      Home
+                      <ArrowLeft size={16} />
                     </button>
                     <button 
-                      onClick={() => setIsProxyFullscreen(!isProxyFullscreen)}
-                      className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      onClick={() => {
+                        const iframe = document.querySelector('iframe[title="Proxy Browser"]');
+                        if (iframe) {
+                          try {
+                            iframe.contentWindow.history.forward();
+                          } catch (e) {
+                            console.warn("Cannot access iframe history due to cross-origin restrictions");
+                          }
+                        }
+                      }}
+                      className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      title="Forward"
                     >
-                      <Maximize2 className="w-3.5 h-3.5" />
+                      <ArrowRight size={16} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const iframe = document.querySelector('iframe[title="Proxy Browser"]');
+                        if (iframe) iframe.src = iframe.src;
+                      }}
+                      className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      title="Refresh"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                  </div>
+                  
+                  <form 
+                    className="flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 gap-3 focus-within:ring-2 focus-within:ring-blue-900/50 transition-all"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const input = e.currentTarget.querySelector('input');
+                      if (input && input.value.trim()) {
+                        let url = input.value.trim();
+                        if (!url.startsWith('http')) {
+                          if (url.includes('.') && !url.includes(' ')) {
+                            url = 'https://' + url;
+                          } else {
+                            url = `https://duckduckgo.com/?q=${encodeURIComponent(url)}`;
+                          }
+                        }
+                        setActiveProxyUrl(url);
+                      }
+                    }}
+                  >
+                    <Globe size={14} className="text-slate-500" />
+                    <input 
+                      type="text" 
+                      defaultValue={activeProxyUrl}
+                      placeholder="Search or enter URL..."
+                      className="flex-1 bg-transparent border-none outline-none text-xs text-slate-300 placeholder:text-slate-600"
+                    />
+                    <button type="submit" className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
+                      Go
+                    </button>
+                  </form>
+                  
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setIsProxyFullscreen(!isProxyFullscreen)}
+                      className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      title={isProxyFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setActiveProxyUrl('https://duckduckgo.com')}
+                      className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                      title="Home"
+                    >
+                      <HomeIcon className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <iframe 
-                  src={`/api/proxy/${activeProxyUrl || 'https://duckduckgo.com'}`} 
-                  className="w-full h-[calc(100%-40px)] border-none" 
-                  title="Proxy Browser"
-                />
+
+                <div className="flex-1 relative bg-black">
+                  <iframe 
+                    key={activeProxyUrl}
+                    src={`/api/proxy/${activeProxyUrl || 'https://duckduckgo.com'}`} 
+                    className="w-full h-full border-none" 
+                    title="Proxy Browser"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
               </div>
             </motion.div>
           )}
